@@ -1,0 +1,52 @@
+NVIM_INIT="${XDG_CONFIG_HOME:-$HOME/.config}/nvim/init.vim"
+echo "$NVIM_INIT"
+REGOLITH_LIGHT="gruvbox-light"
+REGOLITH_DARK="gruvbox"
+
+# altera background no init.vim (faz backup)
+# procura linhas "set background=..." e troca; se não existir, adiciona uma linha no fim
+update_nvim_background() {
+  local target="$1"   # "dark" ou "light"
+  local tmp="${NVIM_INIT}.swptmp"
+  if [ ! -f "$NVIM_INIT" ]; then
+    echo "init.vim não encontrado em: $NVIM_INIT"
+    return 1
+  fi
+
+  if [ "$target" != "dark" ] && [ "$target" != "light" ]; then
+    return 1
+  fi
+
+  # faz backup rápido
+  cp -a "$NVIM_INIT" "${NVIM_INIT}.bak.$(date +%s)"
+
+  # substitui linhas "se background=..." (com ou sem espaço) para o target
+  if grep -q -E '^\s*se\s+background\s*=\s*(light|dark)\b' "$NVIM_INIT"; then
+    sed -E "s/^\s*(se\s+background\s*=\s*)(light|dark)\b/\1${target}/I" "$NVIM_INIT" > "$tmp"
+  fi
+
+  mv "$tmp" "$NVIM_INIT"
+  echo "Neovim: set background=$target em $NVIM_INIT (backup em ${NVIM_INIT}.bak...)"
+}
+
+apply_regolith_look() {
+  local target="$1"  # "dark" ou "light"
+  if ! command -v regolith-look >/dev/null 2>&1; then
+    echo "regolith-look não encontrado no PATH. Pulando mudança de look."
+    return 1
+  fi
+
+  if [ "$target" = "dark" ]; then
+    regolith-look set "$REGOLITH_DARK"
+  else
+    regolith-look set "$REGOLITH_LIGHT"
+  fi
+
+  if command -v i3-msg >/dev/null 2>&1; then
+    i3-msg restart >/dev/null 2>&1 || true
+  fi
+}
+
+update_nvim_background "$@"
+apply_regolith_look "$@"
+
