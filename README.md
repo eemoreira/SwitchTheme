@@ -3,9 +3,8 @@
 
 ```
 chmod +x install.sh
+./install.sh
 ```
-
-Then simply run **install.sh**
 
 ## Usage
 
